@@ -32,11 +32,21 @@ end
 
 ## -----------  Constructors
 
+"""
+	RegressionTable()
+
+Initialize empty table
+"""
 function RegressionTable()
     return RegressionTable(Dict{Symbol, RegressorInfo}());
 end
 
 
+"""
+	RegressionTable(nameV, coeffV, seV)
+
+Initialize using vectors of names, coefficients, and std errors.
+"""
 function RegressionTable(nameV :: Vector{Symbol}, coeffV :: Vector{Float64}, seV :: Vector{Float64})
     rt = RegressionTable();
     for i1 = 1 : length(nameV)
@@ -65,6 +75,11 @@ function has_regressor(rt :: RegressionTable, name :: Symbol)
     return haskey(rt.d, name)
 end
 
+"""
+	get_regressor(rt, name)
+
+Retrieve a [`RegressorInfo`](@ref) object.
+"""
 function get_regressor(rt :: RegressionTable, name :: Symbol)
     @assert has_regressor(rt, name)  "Regressor $name not found"
     return rt.d[name]
@@ -75,8 +90,12 @@ function get_regressor(rt :: RegressionTable, name :: String)
 end
 
 
-# Return coefficient
-# Coefficient name may be Symbol or String
+"""
+	get_coefficient(rt, name)
+
+Return coefficient
+Coefficient name may be Symbol or String
+"""
 function get_coefficient(rt :: RegressionTable, name)
     ri = get_regressor(rt, name);
     return ri.coeff
@@ -87,11 +106,22 @@ function get_std_error(rt :: RegressionTable, name)
     return ri.se
 end
 
+"""
+	get_coeff_se(rt, name)
+
+Return coefficient and std error as tuple.
+"""
 function get_coeff_se(rt :: RegressionTable, name)
     ri = get_regressor(rt, name);
     return ri.coeff, ri.se
 end
 
+
+"""
+	get_coeff_se_multiple(rt, names)
+
+Return multiple coefficients and std errors.
+"""
 function get_coeff_se_multiple(rt :: RegressionTable,  names :: Vector)
     n = length(names);
     coeffV = Vector{Float64}(undef, n);
@@ -102,6 +132,12 @@ function get_coeff_se_multiple(rt :: RegressionTable,  names :: Vector)
     return coeffV, seV
 end
 
+
+"""
+	get_all_coeff_se(rt)
+
+Return all coefficients and std errors.
+"""
 function get_all_coeff_se(rt :: RegressionTable)
     return get_coeff_se_multiple(rt, get_names(rt))
 end
@@ -128,6 +164,11 @@ end
 
 ## --------------  Display
 
+"""
+	Base.show(rt)
+
+Pretty print a regression table to `stdio`
+"""
 function Base.show(rt :: RegressionTable)
     if n_regressors(rt) < 1
         println("Empty RegressionTable")
