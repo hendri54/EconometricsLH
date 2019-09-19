@@ -179,4 +179,20 @@ function Base.show(rt :: RegressionTable)
     return nothing
 end
 
+
+## ------------  Comparison
+
+# test this +++++
+function have_same_regressors(rtV :: Vector{RegressionTable})
+    areSame = true;
+    nameV = get_names(rtV[1]);
+    for rt in rtV
+        if !isequal(nameV, sort(get_names(rt)))
+            areSame = false;
+            break;
+        end
+    end
+    return areSame
+end
+
 # ------------

@@ -24,6 +24,13 @@ using Test
     @test get_names(rt) == nameV
 
     Base.show(rt)
+
+    rt2 = RegressionTable([:b, :c, :a], [2.0, 3.0, 4.0], [0.1, 0.2, 0.3]);
+    @test have_same_regressors([rt, rt2])
+
+    rt3 = RegressionTable([:a, :b, :c, :d], [2.0, 3.0, 4.0, 5.0], [0.1, 0.2, 0.3, 0.4]);
+    @test !have_same_regressors([rt, rt2, rt3])
 end
+
 
 # ------------------
