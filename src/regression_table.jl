@@ -14,7 +14,8 @@ end
 """
     RegressionTable
 
-Holds regression coefficients and std errors
+Holds regression coefficients and std errors.
+The order is indeterminate, but will usually be sorted by name.
 """
 struct RegressionTable
     d :: Dict{Symbol, RegressorInfo}
@@ -139,7 +140,9 @@ end
 Return all coefficients and std errors.
 """
 function get_all_coeff_se(rt :: RegressionTable)
-    return get_coeff_se_multiple(rt, get_names(rt))
+    nameV = get_names(rt);
+    coeffV, seV = get_coeff_se_multiple(rt, nameV);
+    return nameV, coeffV, seV
 end
 
 function get_names(rt :: RegressionTable)
@@ -154,8 +157,8 @@ function make_table(rt)
     if n_regressors(rt) < 1
         dataM = Matrix{Any}();
     else
-        coeffV, seV = get_all_coeff_se(rt);
-        nameV = get_name_strings(rt);
+        nameV, coeffV, seV = get_all_coeff_se(rt);
+        nameV = string.(nameV);
         dataM = hcat(nameV, coeffV, seV)
     end
     return dataM :: Matrix
@@ -182,10 +185,9 @@ end
 
 ## ------------  Comparison
 
-# test this +++++
 function have_same_regressors(rtV :: Vector{RegressionTable})
     areSame = true;
-    nameV = get_names(rtV[1]);
+    nameV = sort(get_names(rtV[1]));
     for rt in rtV
         if !isequal(nameV, sort(get_names(rt)))
             areSame = false;

@@ -5,7 +5,7 @@ using Test
     rt = RegressionTable();
     @test n_regressors(rt) == 0
 
-    nameV = [:a, :b, :c];
+    nameV = [:c, :b, :a];
     coeffV = [1.0, 2.0, 3.0];
     seV = [1.1, 2.2, 3.3];
     rt = RegressionTable(nameV, coeffV, seV);
@@ -17,11 +17,12 @@ using Test
     @test all(coeff2V .≈ coeffV[1:2])
     @test all(se2V .≈ seV[1:2])
 
-    coeff3V, se3V = get_all_coeff_se(rt);
-    @test all(coeff3V .≈ coeffV)
-    @test all(se3V .≈ seV)
+    # The order is indeterminate
+    name3V, coeff3V, se3V = get_all_coeff_se(rt);
+    @test all(sort(coeff3V) .≈ sort(coeffV))
+    @test all(sort(se3V) .≈ sort(seV))
 
-    @test get_names(rt) == nameV
+    @test sort(get_names(rt)) == sort(nameV)
 
     Base.show(rt)
 
