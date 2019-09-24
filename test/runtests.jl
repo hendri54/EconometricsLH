@@ -1,4 +1,4 @@
-using EconometricsLH
+using EconometricsLH, DataFrames, GLM, StatsBase
 using Test
 
 @testset "EconometricsLH" begin
@@ -11,7 +11,11 @@ using Test
         rSum = reduce_regr_infos(rV, sum);
         @test rSum.coeff ≈ sum(coeffV)
         @test rSum.se ≈ sum(seV)
+
+        @test !isapprox(rV[1], rV[2])
+        @test isapprox(rV[1], rV[1])
     end
+
 
     @testset "RegressionTable" begin
         rt = RegressionTable();
@@ -40,17 +44,48 @@ using Test
 
         rt2 = RegressionTable([:b, :c, :a], [2.0, 3.0, 4.0], [0.1, 0.2, 0.3]);
         @test have_same_regressors([rt, rt2])
+        @test !isapprox(rt, rt2)
 
         rt3 = RegressionTable([:a, :b, :c, :d], [2.0, 3.0, 4.0, 5.0], [0.1, 0.2, 0.3, 0.4]);
         @test !have_same_regressors([rt, rt2, rt3])
 
         # Reduce
-        rtOut = reduce_regr_tables([rt, rt2], sum);
+        rtOut = reduce_regr_tables([rt, rt2], mean);
         for name in [:a, :b, :c]
             coeffOut, seOut = get_coeff_se(rtOut, name);
-            @test coeffOut ≈ get_coefficient(rt, name) + get_coefficient(rt2, name)
-            @test seOut ≈ get_std_error(rt, name) + get_std_error(rt2, name)
+            @test coeffOut ≈ (get_coefficient(rt, name) + get_coefficient(rt2, name)) / 2.0;
+            @test seOut ≈ (get_std_error(rt, name) + get_std_error(rt2, name)) / 2.0
         end
+
+        rtOut2 = mean([rt, rt2]);
+        @test isapprox(rtOut, rtOut2)
+        for name in [:a, :b, :c]
+            @test get_coefficient(rtOut, name) ≈ get_coefficient(rtOut2, name)
+            @test get_std_error(rtOut, name) ≈ get_std_error(rtOut2, name)
+        end
+
+        rtOut3 = reduce_regr_tables([rt, rt2], StatsBase.std);
+        rtOut4 = StatsBase.std([rt, rt2]);
+        @test isapprox(rtOut3, rtOut4)
+
+        rename_regressor(rtOut3, :a, :aNew);
+        @test isapprox(get_regressor(rtOut4, :a), get_regressor(rtOut3, :aNew))
+    end
+
+
+    @testset "From linear model" begin
+        n = 16;
+        zV = categorical(round.(Int, collect(range(1, 4, length = n))));
+        data = DataFrame(X = collect(range(1.0, 3.0, length = n)) .^ 2, 
+            Y = collect(range(0.1, 3.5, length = n)),
+            Z = zV);
+        ols = lm(@formula(Y ~ X + Z), data);
+        coeffV = coef(ols);
+
+        rt = RegressionTable(ols);
+        @test get_coefficient(rt, :X) ≈ coeffV[2]
+        @test get_coefficient(rt, :constant) ≈ coeffV[1]
+        @test get_coefficient(rt, :Z2) ≈ coeffV[3]
     end
 end
 

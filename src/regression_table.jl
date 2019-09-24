@@ -69,6 +69,19 @@ function reduce_regr_infos(rV :: Vector{RegressorInfo}, reduceFct :: Function)
 end
 
 
+"""
+	$(SIGNATURES)
+
+Are two regressors approximately equal?
+"""
+function isapprox(r1 :: RegressorInfo, r2 :: RegressorInfo;
+    rtol :: Float64 = 1e-5, atol :: Float64 = 1e-6)
+
+    return Base.isapprox(r1.coeff, r2.coeff, rtol = rtol, atol = atol) &&
+        Base.isapprox(r1.se, r2.se, rtol = rtol, atol = atol)
+end
+
+
 ## -----------  RegressionTable
 
 """
@@ -95,6 +108,29 @@ function RegressionTable(nameV :: Vector{Symbol}, coeffV :: Vector{Float64}, seV
 end
 
 
+"""
+	$(SIGNATURES)
+
+Construct RegressionTable from `LinearModel`.
+
+Renames the intercept into :constant.
+
+Renames categorical regressors from "school: 3" to :school3
+"""
+function RegressionTable(lm :: StatsModels.TableRegressionModel; 
+    interceptName :: Symbol = :constant)
+
+    # Names are strings in GLM
+    nameV = coefnames(lm);
+    nameV[findfirst(nameV .== "(Intercept)")] = String(interceptName);
+    # Normalize categorical variable names
+    for i1 = 1 : length(nameV)
+        nameV[i1] = replace(nameV[i1], ": " => "");
+    end
+    return RegressionTable(Symbol.(nameV), coef(lm), stderror(lm))
+end
+
+
 ## ----------  Modification
 
 """
@@ -113,6 +149,68 @@ function add_regressor(rt :: RegressionTable, ri :: RegressorInfo)
     rt.d[ri.name] = ri;
     return nothing
 end
+
+
+"""
+	$(SIGNATURES)
+
+Drop regressors by name.
+"""
+function drop_regressor!(rt :: RegressionTable, name :: Symbol)
+    delete!(rt.d, name)
+end
+
+function drop_regressors!(rt :: RegressionTable, nameV :: Vector{Symbol})
+    for name in nameV
+        drop_regressor!(rt, name)
+    end
+end
+
+
+"""
+	$(SIGNATURES)
+
+Change regressor.
+"""
+function change_regressor!(rt :: RegressionTable, ri :: RegressorInfo)
+    drop_regressor!(rt, ri.name);
+    add_regressor(rt, ri);
+    return nothing
+end
+
+
+"""
+	$(SIGNATURES)
+
+Rename a regressor.
+"""
+function rename_regressor(rt :: RegressionTable, oldName :: Symbol, newName :: Symbol)
+    @assert has_regressor(rt, oldName)
+
+    ri = get_regressor(rt, oldName);
+    ri.name = newName;
+    drop_regressor!(rt, oldName);
+    add_regressor(rt, ri);
+    return nothing
+end
+
+
+"""
+	$(SIGNATURES)
+
+Set missing regressors to 0. Useful for cases where dummies have no values.
+
+test this +++++
+"""
+function set_missing_regressors!(rt :: RegressionTable, nameV :: Vector{Symbol})
+    for name in nameV
+        if !has_regressor(rt, name)
+            add_regressor(rt, name, 0.0, 1.0);
+        end
+    end
+    return nothing
+end
+
 
 
 ## -----------  Retrieval 
@@ -194,6 +292,12 @@ function get_all_coeff_se(rt :: RegressionTable)
     return nameV, coeffV, seV
 end
 
+
+"""
+	$(SIGNATURES)
+
+Get regressor names.
+"""
 function get_names(rt :: RegressionTable)
     return Symbol.(keys(rt.d))
 end
@@ -211,6 +315,35 @@ function make_table(rt)
         dataM = hcat(nameV, coeffV, seV)
     end
     return dataM :: Matrix
+end
+
+
+## ----------  Comparison
+
+"""
+	$(SIGNATURES)
+
+Checks whether all regression coefficients and std errors are approximately the same.
+"""
+function isapprox(rt1 :: RegressionTable, rt2 :: RegressionTable;
+    atol :: Float64 = 1e-6,  rtol :: Float64 = 1e-6)
+
+    @assert(have_same_regressors([rt1, rt2]))
+    areEqual = true;
+    nameV = get_names(rt1);
+    for name in nameV
+        if !Base.isapprox(get_coefficient(rt1, name), get_coefficient(rt2, name),
+                atol = atol, rtol = rtol)
+            areEqual = false;
+            break;
+        end
+        if !Base.isapprox(get_std_error(rt1, name), get_std_error(rt2, name),
+                atol = atol, rtol = rtol)
+            areEqual = false;
+            break;
+        end
+    end
+    return areEqual
 end
 
 
@@ -275,6 +408,25 @@ function reduce_regr_tables(rtV :: Vector{RegressionTable}, reduceFct :: Functio
     end
 
     return rtOut
+end
+
+
+"""
+	$(SIGNATURES)
+
+Defines the `mean` for a `Vector{RegressionTable}` as a convenience method.
+"""
+function mean(rtV :: Vector{RegressionTable})
+    return reduce_regr_tables(rtV, StatsBase.mean);
+end
+
+"""
+	$(SIGNATURES)
+
+Defines the `std` for a `Vector{RegressionTable}`
+"""
+function std(rtV :: Vector{RegressionTable})
+    return reduce_regr_tables(rtV, StatsBase.std);
 end
 
 
