@@ -31,7 +31,45 @@ struct RegressionTable
 end
 
 
-## -----------  Constructors
+## -------------  RegressorInfo
+
+# """
+# 	$(SIGNATURES)
+
+# Returns `RegressorInfo` with mean regression coefficient and std error.
+# """
+# function mean(rV :: Vector{RegressorInfo})
+#     n = length(rV);
+#     @assert n > 0
+#     coeffSum = 0.0;
+#     seSum = 0.0;
+#     for r in rV
+#         coeffSum += r.coeff;
+#         seSum += r.se;
+#     end
+#     rOut = RegressorInfo(rV[1].name, coeffSum ./ n, seSum ./ n);
+#     return rOut;
+# end
+
+
+"""
+	$(SIGNATURES)
+
+Applies `reduceFct` to vector of regression coefficients and std errors.
+
+Returns a `RegressorInfo`.
+"""
+function reduce_regr_infos(rV :: Vector{RegressorInfo}, reduceFct :: Function)
+    n = length(rV);
+    @assert n > 1
+    coeff = reduceFct([r.coeff  for r in rV]);
+    se = reduceFct([r.se  for r in rV]);
+    rOut = RegressorInfo(rV[1].name, coeff, se);
+    return rOut;
+end
+
+
+## -----------  RegressionTable
 
 """
 	RegressionTable()
@@ -59,9 +97,20 @@ end
 
 ## ----------  Modification
 
+"""
+	$(SIGNATURES)
+
+Add a regressor that does not already exist.
+"""
 function add_regressor(rt :: RegressionTable, name :: Symbol, coeff :: Float64, se :: Float64)
     @assert !has_regressor(rt, name)  "Regressor $name exists"
     rt.d[name] = RegressorInfo(name, coeff, se);
+    return nothing
+end
+
+function add_regressor(rt :: RegressionTable, ri :: RegressorInfo)
+    @assert !has_regressor(rt, ri.name)  "Regressor $(ri.name) exists"
+    rt.d[ri.name] = ri;
     return nothing
 end
 
@@ -183,8 +232,13 @@ function Base.show(rt :: RegressionTable)
 end
 
 
-## ------------  Comparison
+## ------------  Vectors of RegressionTables
 
+"""
+	$(SIGNATURES)
+
+Check whether all regressions have the same regressors.
+"""
 function have_same_regressors(rtV :: Vector{RegressionTable})
     areSame = true;
     nameV = sort(get_names(rtV[1]));
@@ -196,5 +250,32 @@ function have_same_regressors(rtV :: Vector{RegressionTable})
     end
     return areSame
 end
+
+
+"""
+	$(SIGNATURES)
+
+Apply a function to all regressors and std errors in a vector of RegressionTables.
+
+All must have the same coefficients.
+
+Use case: Compute the means of all coefficients and std errors across several regressions.
+
+`reduceFct` takes a vector of scalars and returns a scalar. Example: `mean`.
+"""
+function reduce_regr_tables(rtV :: Vector{RegressionTable}, reduceFct :: Function)
+    @assert have_same_regressors(rtV)
+    nameV = get_names(rtV[1]);
+    rtOut = RegressionTable();
+
+    n = length(rtV);
+    for name in nameV
+        ri = reduce_regr_infos([get_regressor(rtV[j], name)  for j = 1 : n], reduceFct);
+        add_regressor(rtOut, ri);
+    end
+
+    return rtOut
+end
+
 
 # ------------

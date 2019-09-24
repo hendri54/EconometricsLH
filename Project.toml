@@ -4,7 +4,9 @@ authors = ["hendri54 <hendricksl@protonmail.com>"]
 version = "0.1.6"
 
 [deps]
+ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 PrettyTables = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
 
