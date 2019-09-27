@@ -15,10 +15,11 @@ end
     RegressionTable
 
 Holds regression coefficients and std errors.
-The order is indeterminate, but will usually be sorted by name.
+The order is determined at construction.
 """
 struct RegressionTable
-    d :: Dict{Symbol, RegressorInfo}
+    # d :: Dict{Symbol, RegressorInfo}
+    d :: Vector{RegressorInfo}
     # df :: DataFrame
     # function RegressionTable(dfIn :: DataFrame)
     #     (nRows, nCols) = size(dfIn);
@@ -33,23 +34,14 @@ end
 
 ## -------------  RegressorInfo
 
-# """
-# 	$(SIGNATURES)
+"""
+	$(SIGNATURES)
 
-# Returns `RegressorInfo` with mean regression coefficient and std error.
-# """
-# function mean(rV :: Vector{RegressorInfo})
-#     n = length(rV);
-#     @assert n > 0
-#     coeffSum = 0.0;
-#     seSum = 0.0;
-#     for r in rV
-#         coeffSum += r.coeff;
-#         seSum += r.se;
-#     end
-#     rOut = RegressorInfo(rV[1].name, coeffSum ./ n, seSum ./ n);
-#     return rOut;
-# end
+Validate regressor. Throws error if not valid.
+"""
+function validate(ri :: RegressorInfo)
+    @argcheck ri.se >= 0.0
+end
 
 
 """
@@ -57,7 +49,7 @@ end
 
 Applies `reduceFct` to vector of regression coefficients and std errors.
 
-Returns a `RegressorInfo`.
+Returns a `RegressorInfo`. Do not validate this. The user may call a function that does not return a valid `RegressorInfo` but is still useful.
 """
 function reduce_regr_infos(rV :: Vector{RegressorInfo}, reduceFct :: Function)
     n = length(rV);
@@ -90,7 +82,7 @@ end
 Initialize empty table
 """
 function RegressionTable()
-    return RegressionTable(Dict{Symbol, RegressorInfo}());
+    return RegressionTable(Vector{RegressorInfo}());
 end
 
 
@@ -140,13 +132,16 @@ Add a regressor that does not already exist.
 """
 function add_regressor(rt :: RegressionTable, name :: Symbol, coeff :: Float64, se :: Float64)
     @assert !has_regressor(rt, name)  "Regressor $name exists"
-    rt.d[name] = RegressorInfo(name, coeff, se);
+    ri = RegressorInfo(name, coeff, se);
+    validate(ri);
+    push!(rt.d, ri);
     return nothing
 end
 
 function add_regressor(rt :: RegressionTable, ri :: RegressorInfo)
     @assert !has_regressor(rt, ri.name)  "Regressor $(ri.name) exists"
-    rt.d[ri.name] = ri;
+    validate(ri);
+    push!(rt.d, ri);
     return nothing
 end
 
@@ -157,7 +152,10 @@ end
 Drop regressors by name.
 """
 function drop_regressor!(rt :: RegressionTable, name :: Symbol)
-    delete!(rt.d, name)
+    idx = get_regressor_index(rt, name);
+    @assert !isnothing(idx)  "Regressor $name does not exist"
+    deleteat!(rt.d, idx);
+    return nothing
 end
 
 function drop_regressors!(rt :: RegressionTable, nameV :: Vector{Symbol})
@@ -173,8 +171,10 @@ end
 Change regressor.
 """
 function change_regressor!(rt :: RegressionTable, ri :: RegressorInfo)
-    drop_regressor!(rt, ri.name);
-    add_regressor(rt, ri);
+    validate(ri);
+    idx = get_regressor_index(rt, ri.name);
+    @assert !isnothing(idx)  "Regressor $(ri.name) not found"
+    rt.d[idx] = ri;
     return nothing
 end
 
@@ -185,12 +185,11 @@ end
 Rename a regressor.
 """
 function rename_regressor(rt :: RegressionTable, oldName :: Symbol, newName :: Symbol)
-    @assert has_regressor(rt, oldName)
+    @assert !has_regressor(rt, newName)
 
-    ri = get_regressor(rt, oldName);
-    ri.name = newName;
-    drop_regressor!(rt, oldName);
-    add_regressor(rt, ri);
+    idx = get_regressor_index(rt, oldName);
+    @assert !isnothing(idx)
+    rt.d[idx].name = newName;
     return nothing
 end
 
@@ -200,7 +199,7 @@ end
 
 Set missing regressors to 0. Useful for cases where dummies have no values.
 
-test this +++++
+Does not ensure both regressions have the same variable ordering.
 """
 function set_missing_regressors!(rt :: RegressionTable, nameV :: Vector{Symbol})
     for name in nameV
@@ -220,7 +219,7 @@ function n_regressors(rt :: RegressionTable)
 end
 
 function has_regressor(rt :: RegressionTable, name :: Symbol)
-    return haskey(rt.d, name)
+    return !isnothing(get_regressor_index(rt, name))
 end
 
 """
@@ -229,12 +228,24 @@ end
 Retrieve a [`RegressorInfo`](@ref) object.
 """
 function get_regressor(rt :: RegressionTable, name :: Symbol)
-    @assert has_regressor(rt, name)  "Regressor $name not found"
-    return rt.d[name]
+    idx = get_regressor_index(rt, name);
+    @assert !isnothing(idx)  "Regressor $name not found"
+    return rt.d[idx]
 end
 
 function get_regressor(rt :: RegressionTable, name :: String)
-    return rt.d[Symbol(name)]
+    return get_regressor(rt, Symbol(name))
+end
+
+
+"""
+	$(SIGNATURES)
+
+Get index of regressor by name. Returns `nothing` if not found.
+"""
+function get_regressor_index(rt :: RegressionTable, name :: Symbol)
+    idx = findfirst(x -> x.name == name, rt.d);
+    return idx
 end
 
 
@@ -299,11 +310,12 @@ end
 Get regressor names.
 """
 function get_names(rt :: RegressionTable)
-    return Symbol.(keys(rt.d))
+    nameV = [rt.d[idx].name  for idx in 1 : length(rt.d)];
+    return nameV
 end
 
 function get_name_strings(rt :: RegressionTable)
-    return string.(keys(rt.d));
+    return string.(get_names(rt));
 end
 
 function make_table(rt)
@@ -328,7 +340,7 @@ Checks whether all regression coefficients and std errors are approximately the 
 function isapprox(rt1 :: RegressionTable, rt2 :: RegressionTable;
     atol :: Float64 = 1e-6,  rtol :: Float64 = 1e-6)
 
-    @assert(have_same_regressors([rt1, rt2]))
+    assert_same_regressors([rt1, rt2]);
     areEqual = true;
     nameV = get_names(rt1);
     for name in nameV
@@ -388,6 +400,23 @@ end
 """
 	$(SIGNATURES)
 
+Assert that all regressions have the same regressors. Error if not.
+"""
+function assert_same_regressors(rtV :: Vector{RegressionTable})
+    if !have_same_regressors(rtV)
+        @warn "RegressionTables have different regressors"
+        for rt in rtV
+            println(get_names(rt));
+        end
+        error("Aborted.")
+    end
+    return nothing
+end
+
+
+"""
+	$(SIGNATURES)
+
 Apply a function to all regressors and std errors in a vector of RegressionTables.
 
 All must have the same coefficients.
@@ -397,7 +426,7 @@ Use case: Compute the means of all coefficients and std errors across several re
 `reduceFct` takes a vector of scalars and returns a scalar. Example: `mean`.
 """
 function reduce_regr_tables(rtV :: Vector{RegressionTable}, reduceFct :: Function)
-    @assert have_same_regressors(rtV)
+    assert_same_regressors(rtV)
     nameV = get_names(rtV[1]);
     rtOut = RegressionTable();
 
