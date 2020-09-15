@@ -1,76 +1,11 @@
 """
-    RegressorInfo
-
-Holds info about one regressor
-"""
-mutable struct RegressorInfo
-    name :: Symbol
-    coeff :: Float64
-    se :: Float64
-end
-
-
-
-"""
     RegressionTable
 
 Holds regression coefficients and std errors.
 The order is determined at construction.
 """
 struct RegressionTable
-    # d :: Dict{Symbol, RegressorInfo}
     d :: Vector{RegressorInfo}
-    # df :: DataFrame
-    # function RegressionTable(dfIn :: DataFrame)
-    #     (nRows, nCols) = size(dfIn);
-    #     @assert nRows == 2
-    #     if dfIn.stat != ["coeff", "se"]
-    #         error("stat column has wrong values: $(dfIn.stat)")
-    #     end
-    #     return new(dfIn)
-    # end
-end
-
-
-## -------------  RegressorInfo
-
-"""
-	$(SIGNATURES)
-
-Validate regressor. Throws error if not valid.
-"""
-function validate(ri :: RegressorInfo)
-    @argcheck ri.se >= 0.0
-end
-
-
-"""
-	$(SIGNATURES)
-
-Applies `reduceFct` to vector of regression coefficients and std errors.
-
-Returns a `RegressorInfo`. Do not validate this. The user may call a function that does not return a valid `RegressorInfo` but is still useful.
-"""
-function reduce_regr_infos(rV :: Vector{RegressorInfo}, reduceFct :: Function)
-    n = length(rV);
-    @assert n > 1
-    coeff = reduceFct([r.coeff  for r in rV]);
-    se = reduceFct([r.se  for r in rV]);
-    rOut = RegressorInfo(rV[1].name, coeff, se);
-    return rOut;
-end
-
-
-"""
-	$(SIGNATURES)
-
-Are two regressors approximately equal?
-"""
-function isapprox(r1 :: RegressorInfo, r2 :: RegressorInfo;
-    rtol :: Float64 = 1e-5, atol :: Float64 = 1e-6)
-
-    return Base.isapprox(r1.coeff, r2.coeff, rtol = rtol, atol = atol) &&
-        Base.isapprox(r1.se, r2.se, rtol = rtol, atol = atol)
 end
 
 
@@ -133,14 +68,14 @@ Add a regressor that does not already exist.
 function add_regressor(rt :: RegressionTable, name :: Symbol, coeff :: Float64, se :: Float64)
     @assert !has_regressor(rt, name)  "Regressor $name exists"
     ri = RegressorInfo(name, coeff, se);
-    validate(ri);
+    validate_regressor(ri);
     push!(rt.d, ri);
     return nothing
 end
 
 function add_regressor(rt :: RegressionTable, ri :: RegressorInfo)
     @assert !has_regressor(rt, ri.name)  "Regressor $(ri.name) exists"
-    validate(ri);
+    validate_regressor(ri);
     push!(rt.d, ri);
     return nothing
 end
@@ -149,18 +84,23 @@ end
 """
 	$(SIGNATURES)
 
-Drop regressors by name.
+Drop regressors by name. Option to ignore missing regressors instead of throwing an error.
 """
-function drop_regressor!(rt :: RegressionTable, name :: Symbol)
+function drop_regressor!(rt :: RegressionTable, name :: Symbol;
+    errorOnMissing :: Bool = true)
     idx = get_regressor_index(rt, name);
-    @assert !isnothing(idx)  "Regressor $name does not exist"
-    deleteat!(rt.d, idx);
+    if !isnothing(idx)
+        deleteat!(rt.d, idx);
+    elseif errorOnMissing
+        error("Regressor $name does not exist");
+    end
     return nothing
 end
 
-function drop_regressors!(rt :: RegressionTable, nameV :: Vector{Symbol})
+function drop_regressors!(rt :: RegressionTable, nameV :: Vector{Symbol};
+    errorOnMissing :: Bool = true)
     for name in nameV
-        drop_regressor!(rt, name)
+        drop_regressor!(rt, name; errorOnMissing = errorOnMissing);
     end
 end
 
@@ -171,7 +111,7 @@ end
 Change regressor.
 """
 function change_regressor!(rt :: RegressionTable, ri :: RegressorInfo)
-    validate(ri);
+    validate_regressor(ri);
     idx = get_regressor_index(rt, ri.name);
     @assert !isnothing(idx)  "Regressor $(ri.name) not found"
     rt.d[idx] = ri;
@@ -182,7 +122,7 @@ end
 """
 	$(SIGNATURES)
 
-Rename a regressor.
+Rename a regressor. Errors if `oldName` does not exist.
 """
 function rename_regressor(rt :: RegressionTable, oldName :: Symbol, newName :: Symbol)
     @assert !has_regressor(rt, newName)
@@ -218,6 +158,11 @@ function n_regressors(rt :: RegressionTable)
     return length(rt.d)
 end
 
+"""
+	$(SIGNATURES)
+
+Does a regressor name exist in a `RegressionTable`?
+"""
 function has_regressor(rt :: RegressionTable, name :: Symbol)
     return !isnothing(get_regressor_index(rt, name))
 end
@@ -260,6 +205,11 @@ function get_coefficient(rt :: RegressionTable, name)
     return ri.coeff
 end
 
+"""
+	$(SIGNATURES)
+
+Retrieve a standard error by name.
+"""
 function get_std_error(rt :: RegressionTable, name)
     ri = get_regressor(rt, name);
     return ri.se
@@ -268,7 +218,7 @@ end
 """
 	get_coeff_se(rt, name)
 
-Return coefficient and std error as tuple.
+Return coefficient and std error as tuple.  `name` can be Symbol or String.
 """
 function get_coeff_se(rt :: RegressionTable, name)
     ri = get_regressor(rt, name);
@@ -279,7 +229,7 @@ end
 """
 	get_coeff_se_multiple(rt, names)
 
-Return multiple coefficients and std errors.
+Return multiple coefficients and std errors. `names` can be Symbol or String.
 """
 function get_coeff_se_multiple(rt :: RegressionTable,  names :: Vector)
     n = length(names);
@@ -318,6 +268,12 @@ function get_name_strings(rt :: RegressionTable)
     return string.(get_names(rt));
 end
 
+
+"""
+	$(SIGNATURES)
+
+Make table where columns are regressor names, coefficients, std errors.
+"""
 function make_table(rt)
     if n_regressors(rt) < 1
         dataM = Matrix{Any}();
@@ -361,17 +317,12 @@ end
 
 ## --------------  Display
 
-"""
-	Base.show(rt)
-
-Pretty print a regression table to `stdio`
-"""
-function Base.show(rt :: RegressionTable)
+function Base.show(io :: IO, rt :: RegressionTable)
     if n_regressors(rt) < 1
-        println("Empty RegressionTable")
+        print(io, "Empty RegressionTable.")
     else
         dataM = make_table(rt);
-        pretty_table(dataM, ["Regressor", "Coefficient", "StdError"]);
+        pretty_table(io, dataM, ["Regressor", "Coefficient", "StdError"]);
     end
     return nothing
 end

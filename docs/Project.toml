@@ -1,5 +1,9 @@
 [deps]
+DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+EconometricsLH = "72fbd86f-1f1b-5c28-94df-d0426893c88f"
+FilesLH = "69233b93-b644-4f5d-9b2e-8880c8b19068"
 
 [compat]
-Documenter = "~0.20"
+Documenter = "0.25"
+julia = "^1"

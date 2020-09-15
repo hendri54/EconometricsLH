@@ -9,20 +9,32 @@ function make_regr_table(startValue :: Float64,  nameV :: Vector{Symbol})
     return rt
 end
 
+function make_regr_info(j)
+    ri = RegressorInfo(Symbol("r$j"),  0.5 + j,  0.1 + j);
+    validate_regressor(ri);
+    return ri
+end
+
 
 function regressor_info_test()
     @testset "RegressorInfo" begin
-        name = :r1;
-        coeffV = [1.0, 2.0, 3.0];
-        seV = [0.1, 0.2, 0.3];
-        rV = [RegressorInfo(name, coeffV[j], seV[j])  for j = 1 : length(seV)];
+        n = 3;
+        rV = [make_regr_info(j)  for j = 1 : n];
+        coeffV = [regr_coeff(rV[j])  for j = 1 : n];
+        seV = [regr_se(rV[j])  for j = 1 : n];
 
         rSum = reduce_regr_infos(rV, sum);
-        @test rSum.coeff ≈ sum(coeffV)
-        @test rSum.se ≈ sum(seV)
+        @test regr_coeff(rSum) ≈ sum(coeffV)
+        @test regr_se(rSum) ≈ sum(seV)
 
-        @test !isapprox(rV[1], rV[2])
-        @test isapprox(rV[1], rV[1])
+
+        r1 = make_regr_info(1);
+        r2 = make_regr_info(1);
+        @test isapprox(r1, r2)
+        scale_regressor(r2, 3.0);
+        @test !isapprox(r1, r2)
+        @test isapprox(regr_coeff(r1) * 3.0, regr_coeff(r2))
+        println(r1);
     end
 end
 
@@ -63,7 +75,7 @@ function regression_table_test()
         set_missing_regressors!(rt3, [:a, :d]);
         @test sort(get_names(rt3)) == [:a, :b, :c, :d]
 
-        Base.show(rt)
+        println(rt)
 
         # Drop regressor
         drop_regressor!(rt5, :a);
@@ -126,6 +138,7 @@ end
     regression_table_test();
     regr_table_mult_test();
     from_lin_model_test();
+    include("regression_test_test.jl");
 end
 
 
