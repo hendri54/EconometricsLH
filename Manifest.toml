@@ -10,15 +10,15 @@ uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
 [[CategoricalArrays]]
 deps = ["DataAPI", "Future", "JSON", "Missings", "Printf", "Statistics", "StructTypes", "Unicode"]
-git-tree-sha1 = "e7cb4f23938914f09afae58b611a59f3aa8d8f66"
+git-tree-sha1 = "2ac27f59196a68070e132b25713f9a5bbc5fa0d2"
 uuid = "324d7699-5711-5eae-9e2f-1d82baa6b597"
-version = "0.8.2"
+version = "0.8.3"
 
 [[CommonLH]]
-deps = ["ArgCheck", "DocStringExtensions", "Documenter", "Formatting", "Printf", "Random", "Statistics", "StatsBase", "Test"]
-git-tree-sha1 = "4c9b36258f375ea64bfd99ef4bfb7adebd9458c1"
+deps = ["ArgCheck", "DocStringExtensions", "Formatting", "Printf", "Random", "Statistics", "StatsBase", "Test"]
+git-tree-sha1 = "21aa882683b8a5ad748163732d4e011542372a58"
 uuid = "96c8dc4a-d23f-53b2-b478-aad5d5ab80bd"
-version = "0.3.6"
+version = "0.3.7"
 
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "SHA", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
@@ -50,9 +50,9 @@ version = "0.21.7"
 
 [[DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
-git-tree-sha1 = "a88a67acbf3b61057371f315cadd027c8bce6d6d"
+git-tree-sha1 = "0347f23484a96d56e7096eb1f55c6975be34b11a"
 uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-version = "0.18.5"
+version = "0.18.6"
 
 [[DataValueInterfaces]]
 git-tree-sha1 = "bfc1187b79289637fa0ef6d4436ebdfe6905cbd6"
@@ -72,10 +72,10 @@ deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[Distributions]]
-deps = ["FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SpecialFunctions", "Statistics", "StatsBase", "StatsFuns"]
-git-tree-sha1 = "3676697fd903ba314aaaa0ec8d6813b354edb875"
+deps = ["FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SparseArrays", "SpecialFunctions", "StaticArrays", "Statistics", "StatsBase", "StatsFuns"]
+git-tree-sha1 = "501c11d708917ca09ce357bed163dbaf0f30229f"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
-version = "0.23.11"
+version = "0.23.12"
 
 [[DocStringExtensions]]
 deps = ["LibGit2", "Markdown", "Pkg", "Test"]
@@ -178,9 +178,9 @@ version = "1.3.1"
 
 [[PDMats]]
 deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse", "Test"]
-git-tree-sha1 = "b3405086eb6a974eba1958923d46bc0e1c2d2d63"
+git-tree-sha1 = "95a4038d1011dfdbde7cecd2ad0ac411e53ab1bc"
 uuid = "90014a1f-27ba-587c-ab20-58faa44d9150"
-version = "0.10.0"
+version = "0.10.1"
 
 [[Parameters]]
 deps = ["OrderedCollections", "UnPack"]
@@ -279,6 +279,12 @@ deps = ["OpenSpecFun_jll"]
 git-tree-sha1 = "d8d8b8a9f4119829410ecd706da4cc8594a1e020"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
 version = "0.10.3"
+
+[[StaticArrays]]
+deps = ["LinearAlgebra", "Random", "Statistics"]
+git-tree-sha1 = "016d1e1a00fabc556473b07161da3d39726ded35"
+uuid = "90137ffa-7385-5640-81b9-e52037218182"
+version = "0.12.4"
 
 [[Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]

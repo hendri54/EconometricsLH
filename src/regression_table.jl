@@ -43,9 +43,15 @@ Construct RegressionTable from `LinearModel`.
 Renames the intercept into :constant.
 
 Renames categorical regressors from "school: 3" to :school3
+
+# Arguments
+- `lm`: Output from `fit()`
+- `interceptName`: new name of intercept
+- `replaceNan`: replace NaN values of coefficients and std errors? This can be useful to deal with regressions that were, say, rank deficient. Coefficients are set to 0.0 and std errors are set to 1.0.
 """
 function RegressionTable(lm :: StatsModels.TableRegressionModel; 
-    interceptName :: Symbol = :constant)
+    interceptName :: Symbol = :constant,
+    replaceNan :: Bool = false)
 
     # Names are strings in GLM
     nameV = coefnames(lm);
@@ -54,7 +60,14 @@ function RegressionTable(lm :: StatsModels.TableRegressionModel;
     for i1 = 1 : length(nameV)
         nameV[i1] = replace(nameV[i1], ": " => "");
     end
-    return RegressionTable(Symbol.(nameV), coef(lm), stderror(lm))
+
+    coeffV = coef(lm);
+    seV = stderror(lm);
+    if replaceNan
+        coeffV[isnan.(coeffV)] .= 0.0;
+        seV[isnan.(seV)] .= 1.0;
+    end
+    return RegressionTable(Symbol.(nameV), coeffV, seV)
 end
 
 
