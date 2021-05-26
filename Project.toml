@@ -1,10 +1,11 @@
 name = "EconometricsLH"
 uuid = "72fbd86f-1f1b-5c28-94df-d0426893c88f"
 authors = ["hendri54 <hendricksl@protonmail.com>"]
-version = "0.2.4"
+version = "0.3"
 
 [deps]
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
+CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"

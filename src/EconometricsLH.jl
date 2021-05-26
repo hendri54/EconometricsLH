@@ -1,6 +1,6 @@
 module EconometricsLH
 
-using ArgCheck, DataFrames, DocStringExtensions, GLM, PrettyTables, StatsBase, StatsModels
+using ArgCheck, CategoricalArrays, DataFrames, DocStringExtensions, GLM, PrettyTables, StatsBase, StatsModels
 import Base.isapprox, Base.show
 import StatsBase.mean, StatsBase.std
 

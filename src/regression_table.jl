@@ -335,7 +335,7 @@ function Base.show(io :: IO, rt :: RegressionTable)
         print(io, "Empty RegressionTable.")
     else
         dataM = make_table(rt);
-        pretty_table(io, dataM, ["Regressor", "Coefficient", "StdError"]);
+        pretty_table(io, dataM; header = ["Regressor", "Coefficient", "StdError"]);
     end
     return nothing
 end

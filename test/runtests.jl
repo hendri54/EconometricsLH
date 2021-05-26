@@ -1,4 +1,4 @@
-using EconometricsLH, DataFrames, GLM, StatsBase
+using EconometricsLH, CategoricalArrays, DataFrames, GLM, StatsBase
 using Test
 
 function make_regr_table(startValue :: Float64,  nameV :: Vector{Symbol})
