@@ -62,7 +62,10 @@ function RegressionTable(lm :: StatsModels.TableRegressionModel;
     end
 
     coeffV = coef(lm);
+    @argcheck coeffV isa Vector{Float64};
     seV = stderror(lm);
+    @argcheck seV isa Vector{Float64};
+
     if replaceNan
         coeffV[isnan.(coeffV)] .= 0.0;
         seV[isnan.(seV)] .= 1.0;
