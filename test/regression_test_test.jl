@@ -11,9 +11,9 @@ function regression_test_test()
         
         for useWeights in [false, true]
             if useWeights
-                dev, betaV, seV = regression_test(trueM, simM; weights = wtM);
+                pValueV, betaV, seV = regression_test(trueM, simM; weights = wtM);
             else
-                dev, betaV, seV = regression_test(trueM, simM);
+                pValueV, betaV, seV = regression_test(trueM, simM);
             end
 
             @test size(betaV) == (2,)
@@ -21,7 +21,7 @@ function regression_test_test()
             @test all(seV .> 0.0)
             @test abs(betaV[1]) < 2.2 * seV[1]
             @test abs(betaV[2] - 1.0) < 2.2 * seV[2]    
-            @test (dev < 2.2);
+            @test all(pValueV .> 0.35);
         end
     end
 end

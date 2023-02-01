@@ -134,6 +134,7 @@ end
 
 
 @testset "EconometricsLH" begin
+    include("hypotheses_test.jl");
     regressor_info_test();
     regression_table_test();
     regr_table_mult_test();

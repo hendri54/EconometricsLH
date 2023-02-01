@@ -1,10 +1,14 @@
 module EconometricsLH
 
-using ArgCheck, CategoricalArrays, DataFrames, DocStringExtensions, GLM, PrettyTables, StatsBase, StatsModels
+using ArgCheck, CategoricalArrays, DataFrames, DocStringExtensions, GLM;
+using HypothesisTests, PrettyTables, StatsBase, StatsModels
 import Base.isapprox, Base.show
 import StatsBase.mean, StatsBase.std
 
 export RegressorInfo, RegressionTable
+
+# Hypothesis testing
+export regr_pvalues, regr_coeff_pvalue;
 
 # RegressorInfo
 export validate_regressor, reduce_regr_infos, regr_name, regr_coeff, regr_se, scale_regressor
@@ -18,8 +22,9 @@ export n_regressors, reduce_regr_tables, rename_regressor, set_missing_regressor
 
 export regression_test
 
-include("regressor_info.jl")
-include("regression_table.jl")
-include("regression_test.jl")
+include("hypotheses.jl");
+include("regressor_info.jl");
+include("regression_table.jl");
+include("regression_test.jl");
 
 end # module
