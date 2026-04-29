@@ -35,8 +35,8 @@ function regression_test(trueM :: AbstractArray{F1}, simM :: AbstractArray{F1};
 
     m = fit(LinearModel, 
         @formula(xSim ~ xTrue), 
-        DataFrame(xSim = vec(simM), xTrue = vec(trueM)),  
-        wts = weights);
+        DataFrame(xSim = vec(simM), xTrue = vec(trueM)); 
+        weights = FrequencyWeights(weights));
 
     pValueV = regr_pvalues(m, n, [zero(F1), one(F1)]);
 
@@ -46,7 +46,11 @@ function regression_test(trueM :: AbstractArray{F1}, simM :: AbstractArray{F1};
     # dev = maximum(abs.(betaV .- [zero(F1), one(F1)]) ./ max.(F1(0.01), seV));
 
     if !silent
-        @info "Regression test result: \n  $m \n  $pValueV";
+        @info """
+            Regression test result: 
+            p-values:  $pValueV"
+            """;
+        @show coeftable(m)
     end
 
     return pValueV, betaV, seV
